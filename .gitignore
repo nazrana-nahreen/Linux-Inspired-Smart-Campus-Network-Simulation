@@ -1,0 +1,28 @@
+# Claude Code internal files
+.claude/
+
+# Build output
+src/out/
+out/
+*.exe
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+*.a
+*.dll.a
+
+# Simulation results
+simulations/results/
+
+# IDE metadata (generated)
+.metadata/
+*.log
+
+# OMNeT++ generated
+src/Makefile
+
+# Simulation runtime logs
+simulations/.cmdenv-log
+simulations/.qtenvrc

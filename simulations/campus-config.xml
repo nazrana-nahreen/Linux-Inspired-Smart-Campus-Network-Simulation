@@ -1,0 +1,17 @@
+<config>
+    <!-- Student subnet: router eth0 (connected to studentSwitch) -->
+    <interface hosts="coreRouter" names="eth0" address="10.0.1.1" netmask="255.255.255.0"/>
+    <interface hosts="studentSwitch student*" names="eth*" address="10.0.1.x" netmask="255.255.255.0"/>
+
+    <!-- Teacher subnet: router eth1 (connected to teacherSwitch) -->
+    <interface hosts="coreRouter" names="eth1" address="10.0.2.1" netmask="255.255.255.0"/>
+    <interface hosts="teacherSwitch teacher*" names="eth*" address="10.0.2.x" netmask="255.255.255.0"/>
+
+    <!-- Admin subnet: router eth2 (connected to adminSwitch) -->
+    <interface hosts="coreRouter" names="eth2" address="10.0.3.1" netmask="255.255.255.0"/>
+    <interface hosts="adminSwitch admin*" names="eth*" address="10.0.3.x" netmask="255.255.255.0"/>
+
+    <!-- Server subnet: router eth3 (connected to campusServer) -->
+    <interface hosts="coreRouter" names="eth3" address="10.0.10.1" netmask="255.255.255.0"/>
+    <interface hosts="campusServer" names="eth*" address="10.0.10.10" netmask="255.255.255.0"/>
+</config>
