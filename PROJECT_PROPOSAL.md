@@ -6,320 +6,547 @@
 
 ## 1. Title
 
-**Design and Performance Analysis of a Multi-Subnet Smart Campus Network with QoS-Based Traffic Prioritization Using OMNeT++ and INET Framework**
+**Linux-Inspired Smart Campus Network: Multi-Subnet Architecture with Firewall Access Control, QoS Traffic Prioritization, and Protocol-Level Performance Analysis Using OMNeT++ and INET Framework**
 
 ---
 
 ## 2. Introduction
 
-Modern educational institutions rely heavily on computer networks to support
-academic, administrative, and operational activities. A university campus
-network must serve diverse user groups — students, faculty members, and
-administrative staff — each with distinct bandwidth requirements and service
-quality expectations. However, network resources are finite. When thousands
-of users share the same infrastructure, congestion becomes inevitable, and
-without proper management, critical services can be degraded or disrupted.
+Modern educational institutions depend on computer networks to support academic,
+administrative, and operational activities. A university campus network serves
+diverse user groups — students, faculty members, and administrative staff — each
+with distinct bandwidth requirements, security clearance levels, and service
+quality expectations. However, network resources are finite. When many users
+share the same infrastructure, congestion becomes inevitable, and without proper
+management, critical services degrade. Moreover, without access control, any user
+could potentially reach any other user's device, creating security vulnerabilities.
 
-This project proposes the design, simulation, and performance analysis of a
-**Smart Campus Network** that organizes users into logically separated subnets
-and implements Differentiated Services (DiffServ) based Quality of Service
-(QoS) to prioritize traffic according to user role and application criticality.
-The network is modeled and simulated using **OMNeT++ 6.0.3** — a discrete event
-network simulator — along with the **INET 4.5 Framework**, which provides
-ready-made, production-grade implementations of Internet protocols.
+This project proposes a **Linux-inspired Smart Campus Network** that models
+real-world Linux networking concepts within the OMNeT++ simulation environment.
+The network is designed around five core principles drawn directly from Linux
+system administration:
 
-The specific goals of this project are:
+1. **Linux Server Architecture** — A centralized application server running
+   multiple service daemons on different ports, exactly as a Linux server
+   would with systemd-managed services.
 
-1. To design a realistic multi-subnet campus network topology comprising
-   student, teacher, administrator, and server segments interconnected via
-   a core router and Ethernet switches.
+2. **iptables-Style Firewall** — Access control between subnets enforced by
+   the core router through explicit allow-list routing, analogous to Linux
+   iptables FORWARD chain rules that selectively permit or DROP traffic.
 
-2. To configure and simulate four distinct traffic scenarios: normal operation,
-   high-load congestion, QoS-based priority handling, and a TCP-versus-UDP
-   transport layer comparison.
+3. **User Permission Model** — Logical subnet isolation where each user group
+   has different network privileges, mirroring Linux file permissions (owner/
+   group/others) applied to network access.
 
-3. To collect and analyze key performance metrics including end-to-end delay,
-   throughput, packet delivery ratio, and packet loss across all scenarios.
+4. **Service Hosting on Separate Ports** — The campus server hosts four
+   independent services on different ports (1000, 2000, 3000, 4000), equivalent
+   to a Linux machine running multiple daemons like Apache, MySQL, SSH, etc.
 
-4. To demonstrate that DSCP-based traffic prioritization effectively preserves
-   service quality for high-priority users even under severe network congestion.
+5. **QoS-Based Priority Access** — DSCP traffic classification ensuring
+   Administrator > Teacher > Student priority, modeling Linux Traffic Control
+   (tc) and queuing disciplines (qdiscs) on a production router.
+
+The simulation is built using **OMNeT++ 6.0.3** with the **INET 4.5 Framework**,
+providing accurate, production-grade implementations of the TCP/IP protocol stack,
+Ethernet, routing, and application models.
+
+### Project Objectives
+
+1. Design a realistic 4-subnet campus network topology with 9 computing nodes,
+   3 Ethernet switches, and a core router.
+
+2. Implement access control between subnets (firewall rules) using explicit
+   route-based filtering that mirrors Linux iptables behavior.
+
+3. Configure and simulate five distinct scenarios: normal operation,
+   high-load congestion, QoS-based priority handling, TCP-vs-UDP transport
+   comparison, and firewall access control verification.
+
+4. Demonstrate that DSCP-based traffic prioritization (EF/AF31/BE) preserves
+   service quality for high-priority users during network congestion.
+
+5. Collect and analyze end-to-end delay, throughput, packet delivery ratio,
+   and packet loss across all scenarios.
 
 ---
 
 ## 3. Motivation
 
-The motivation for this project arises from both academic curiosity and real-world
-relevance.
+### Academic Motivation
 
-**Academic Motivation:** As a student of computer networking, I wanted to move
-beyond textbook diagrams and theoretical explanations to build a working,
-observable network where I could see packets flow, measure delays, and witness
-protocols in action. Simulation offers a risk-free, cost-free environment to
-experiment with network designs that would require substantial hardware
-investment to implement physically.
+As a student of computer networking, I wanted to move beyond textbook diagrams
+to a hands-on, observable system where I could see packets flowing through
+protocol stacks, measure delays, and witness how routing, firewalling, and QoS
+behave in real-time. Simulation provides a risk-free, zero-cost environment to
+experiment with designs that would require substantial hardware investment to
+build physically.
 
-**Practical Motivation:** In real campuses, network administrators face a
-perennial dilemma: how to ensure that critical services — such as online
-examination portals, attendance systems, and emergency notifications — remain
-responsive even when the network is saturated by non-critical traffic like
-video streaming and social media. The DiffServ QoS model, which marks packets
-with priority codes at the network edge and processes them accordingly at each
-router hop, is the industry-standard solution to this problem. Understanding
-and demonstrating this mechanism through simulation builds practical skills
-directly applicable to enterprise network management.
+### Practical Motivation
 
-**Relevance:** With the increasing adoption of smart campus initiatives, IoT
-deployments, and hybrid learning models, campus networks are growing in both
-scale and complexity. The ability to simulate and analyze network behavior
-before deployment is a valuable engineering skill that reduces risk, saves
-costs, and enables evidence-based design decisions.
+In real campus networks, administrators face competing demands:
+
+- **Students** generate heavy traffic: streaming, downloads, social media
+- **Teachers** need reliable access to academic systems
+- **Administrators** require guaranteed connectivity for emergency alerts,
+  attendance systems, and examination portals
+
+The DiffServ QoS model, combined with iptables-style access control, is the
+industry-standard solution. Understanding these mechanisms through simulation
+builds skills directly applicable to enterprise Linux network administration.
+
+### The Linux Connection
+
+The open-source Linux ecosystem powers the majority of the world's servers,
+routers, and network infrastructure. By framing our simulation through Linux
+concepts, we bridge academic networking theory with the tools and practices
+used in production environments. Every component in our simulation maps to a
+real Linux counterpart:
+
+| Linux Concept | Simulation Implementation |
+|--------------|--------------------------|
+| Linux Server (Ubuntu/Debian) | campusServer node (StandardHost) |
+| systemd services on ports | UdpSink/TcpGenericServerApp on ports 1000-4000 |
+| iptables firewall rules | Route-based access control in campus-firewall.xml |
+| User/group permissions | Subnet isolation (10.0.1.0, 10.0.2.0, 10.0.3.0) |
+| Apache/NGINX web server | TcpGenericServerApp (port 4000, TCP) |
+| UDP streaming (video) | UdpBasicApp → UdpSink (ports 1000, 2000, 3000) |
+| ping/ICMP monitoring | PingApp connectivity probes |
+| Linux Traffic Control (tc) | DSCP marking (EF=46, AF31=26, BE=0) |
+| Linux router/gateway | Core Router with 4 interfaces |
+| Network namespaces | Separate /24 subnets |
 
 ---
 
 ## 4. Background
 
-### 4.1 Computer Networks and the OSI Model
+### 4.1 The TCP/IP Protocol Stack
 
-Computer networks enable communication between computing devices through a
-layered architecture. The TCP/IP model — the foundation of the modern
-Internet — consists of four layers:
+Computer networks communicate through a layered architecture. The TCP/IP model
+— the foundation of the Internet — consists of four layers, all of which are
+exercised in this simulation:
 
-| Layer | Function | Protocols Used in This Project |
-|-------|----------|-------------------------------|
-| Application | User-facing services and data generation | Ping, UDP streaming, TCP request/reply |
-| Transport | End-to-end communication reliability | TCP (reliable), UDP (best-effort) |
-| Network | Logical addressing and routing | IPv4, ICMP, DSCP marking |
-| Link / Physical | Frame delivery over physical media | Ethernet (100 Mbps), ARP, MAC learning |
-
-Our simulation exercises all four layers of this stack, providing a holistic
-view of how data moves from an application on one host, down through the
-protocol stack, across physical links, and up through the stack on the
-destination host.
+| Layer | Function | Protocols Used |
+|-------|----------|---------------|
+| Application | User-facing services | Ping (ICMP Echo), UDP streaming, TCP request/reply |
+| Transport | End-to-end reliability | TCP (RFC 793), UDP (RFC 768) |
+| Network | Addressing and routing | IPv4 (RFC 791), ICMP, DSCP marking (RFC 2474) |
+| Link/Physical | Frame delivery | Ethernet 100 Mbps (IEEE 802.3), ARP, MAC learning |
 
 ### 4.2 Subnetting and Routing
 
-A **subnet** (sub-network) is a logical subdivision of an IP network. Subnetting
-improves security by isolating traffic between groups, enhances performance by
-reducing broadcast domain size, and simplifies network management. In our design,
-four /24 subnets are allocated — one for each user category and one for server
-infrastructure.
+A **subnet** is a logical subdivision of an IP network. Our campus uses four
+/24 subnets, each serving a distinct user group:
 
-**Routing** is the process of forwarding packets from a source subnet to a
-destination subnet. The core router maintains a routing table that maps
-destination network prefixes to outgoing interfaces. Static routing is used
-in this project for simplicity and determinism, configured automatically by
-INET's `Ipv4NetworkConfigurator`.
+| Subnet | Network Address | Gateway | Nodes |
+|--------|---------------|---------|-------|
+| Student | 10.0.1.0/24 | 10.0.1.1 (router eth0) | 4 StandardHosts |
+| Teacher | 10.0.2.0/24 | 10.0.2.1 (router eth1) | 2 StandardHosts |
+| Admin | 10.0.3.0/24 | 10.0.3.1 (router eth2) | 2 StandardHosts |
+| Server | 10.0.10.0/24 | 10.0.10.1 (router eth3) | 1 StandardHost |
 
-### 4.3 Quality of Service (QoS) and DSCP
+Static routing is configured automatically by the `Ipv4NetworkConfigurator`
+module, with subnet-specific routing tables verified in each scenario.
 
-Quality of Service refers to the ability of a network to provide differentiated
-treatment to different traffic classes. The **Differentiated Services (DiffServ)**
-architecture, defined in RFC 2474 and RFC 2475, uses the 6-bit **DSCP (Differentiated
-Services Code Point)** field in the IP header to classify packets at network
-boundaries. Routers then apply per-hop behaviors (PHBs) based on these markings.
+### 4.3 Firewall and Access Control
 
-Our simulation implements three DSCP classes:
+In Linux systems, `iptables` is the standard firewall utility. It uses chains
+(INPUT, OUTPUT, FORWARD) with rules that ACCEPT, DROP, or REJECT packets based
+on source/destination IP, port, and protocol.
 
-| User Group | DSCP Value | PHB | Priority Level |
-|-----------|-----------|-----|---------------|
-| Administrators | 46 | EF (Expedited Forwarding) | Highest |
-| Teachers | 26 | AF31 (Assured Forwarding) | Medium |
-| Students | 0 | BE (Best Effort) | Lowest |
+Our simulation implements the equivalent of iptables FORWARD chain rules on
+the core router through **explicit route-based access control**:
 
-EF-marked packets receive priority queuing, minimizing delay and jitter.
-AF-marked packets receive guaranteed delivery with moderate priority.
-BE packets receive no special treatment.
+| Firewall Rule | Linux iptables Equivalent | Effect |
+|--------------|--------------------------|--------|
+| Students → Server only | `iptables -A FORWARD -s 10.0.1.0/24 -d 10.0.10.0/24 -j ACCEPT` | Students access academic services |
+| Students → Teachers blocked | `iptables -A FORWARD -s 10.0.1.0/24 -d 10.0.2.0/24 -j DROP` | Students cannot reach teacher network |
+| Students → Admins blocked | `iptables -A FORWARD -s 10.0.1.0/24 -d 10.0.3.0/24 -j DROP` | Students cannot reach admin network |
+| Teachers → Server + Admins | `iptables -A FORWARD -s 10.0.2.0/24 -d 10.0.3.0/24 -j ACCEPT` | Teachers can reach administrators |
+| Admins → Everything | `iptables -A FORWARD -s 10.0.3.0/24 -j ACCEPT` | Administrators have full access |
+| Server → All replies | `iptables -A FORWARD -m state --state ESTABLISHED -j ACCEPT` | Server can reply to all |
 
-### 4.4 OMNeT++ and INET Framework
+These rules are configured in `campus-firewall.xml` and verified in Scenario 5.
 
-**OMNeT++** (Objective Modular Network Testbed in C++) is an open-source,
-component-based simulation platform widely used in academic and industrial
-research for modeling communication networks, distributed systems, and
-performance evaluation.
+### 4.4 Quality of Service (QoS) and DSCP
 
-**INET** (Internet Simulation Framework) is the standard protocol model library
-for OMNeT++. It provides accurate, maintained implementations of the TCP/IP
-protocol stack, Ethernet, routing protocols, application models, and
-visualization tools. Version 4.5 — used in this project — is the stable
-release compatible with OMNeT++ 6.0.
+QoS enables differentiated treatment of traffic classes. The **DiffServ**
+architecture (RFC 2474, RFC 2475) uses the 6-bit DSCP field in IP headers:
 
-### 4.5 Related Work
+| User Group | DSCP | PHB | Priority |
+|-----------|------|-----|----------|
+| Administrators | 46 | EF (Expedited Forwarding) | **Highest** |
+| Teachers | 26 | AF31 (Assured Forwarding) | **Medium** |
+| Students | 0 | BE (Best Effort) | **Lowest** |
 
-Network simulation for campus environments has been explored in prior academic
-work. Researchers have used tools like Cisco Packet Tracer, GNS3, and NS-3
-for similar purposes. However, OMNeT++ with INET offers a unique combination
-of: (a) accurate protocol implementations derived from real-world standards,
-(b) a modular architecture that allows component-level customization, (c) an
-integrated visualization environment for educational demonstration, and
-(d) comprehensive statistics collection for quantitative analysis.
+EF packets receive priority queuing with minimal delay. AF packets get assured
+delivery with moderate priority. BE packets have no special treatment.
 
----
+### 4.5 TCP vs UDP
 
-## 5. Potential Outcomes
+**TCP** establishes a connection, numbers packets, acknowledges receipt, and
+retransmits lost data — analogous to Linux's reliable socket communication
+(`SOCK_STREAM`). Used for: file transfers, web browsing, email.
 
-Upon successful completion of this project, the following outcomes are expected:
+**UDP** sends data without connection setup, numbering, or acknowledgement —
+analogous to Linux's datagram sockets (`SOCK_DGRAM`). Used for: video streaming,
+VoIP, online gaming, DNS queries.
 
-### 5.1 Functional Network Simulation
+### 4.6 OMNeT++ and INET Framework
 
-A fully operational campus network simulation comprising:
-
-- **9 computing nodes:** 4 student PCs, 2 teacher PCs, 2 admin PCs, and
-  1 campus server, each running the complete TCP/IP stack with realistic
-  application-layer traffic generators.
-
-- **3 Ethernet switches:** One per user subnet, performing MAC address
-  learning and frame forwarding using the IEEE 802.1D bridging protocol.
-
-- **1 core router:** Interconnecting all four subnets with static IPv4
-  routing tables and per-interface IP configuration.
-
-- **Proper subnet isolation:** Four independent /24 subnets (10.0.1.0/24,
-  10.0.2.0/24, 10.0.3.0/24, 10.0.10.0/24) with correct routing between them.
-
-### 5.2 Quantitative Performance Data
-
-Measurable results from four distinct simulation scenarios, exported as
-vector (.vec) and scalar (.sca) files analyzable in the OMNeT++ Analysis
-Tool and compatible with Python/Matlab for further processing:
-
-**Scenario 1 — Normal Operation:**
-- Baseline end-to-end delay (expected: 1–5 ms)
-- Baseline throughput (expected: low, well below link capacity)
-- 100% packet delivery ratio under light load
-
-**Scenario 2 — Congestion Behavior:**
-- Queue length buildup at router egress interfaces
-- Increased end-to-end delay under load (expected: 10–100× baseline)
-- Packet loss due to queue overflow at bottleneck links
-- Demonstration that TCP flows adapt their sending rate under congestion
-  (TCP congestion control), while UDP flows continue unabated
-
-**Scenario 3 — QoS Priority Verification:**
-- Admin packets (DSCP 46) experience significantly lower delay than student
-  packets (DSCP 0) during congestion
-- Teacher packets (DSCP 26) show intermediate delay
-- Quantitative separation of delay distributions across the three classes
-- Evidence that DiffServ-based QoS is effective even without per-flow
-  resource reservation
-
-**Scenario 4 — Protocol Comparison:**
-- TCP sessions demonstrate reliable delivery with connection overhead
-- UDP streams demonstrate lower per-packet latency but with potential loss
-- Throughput comparison showing TCP's throughput is bounded by round-trip
-  time and window size, while UDP throughput is limited only by the
-  application send rate and available bandwidth
-
-### 5.3 Educational Documentation
-
-A comprehensive README document explaining every aspect of the project
-from first principles — suitable for a complete beginner to understand
-network topology, protocol behavior, QoS mechanisms, and simulation
-methodology. This serves as both project documentation and a reusable
-learning resource.
-
-### 5.4 Reproducible Research Artifact
-
-The complete project source code, configuration files, and build
-instructions are version-controlled and publicly available on GitHub
-at [https://github.com/nazrana-nahreen/Linux-Inspired-Smart-Campus-Network-Simulation](https://github.com/nazrana-nahreen/Linux-Inspired-Smart-Campus-Network-Simulation).
-Any researcher or student with OMNeT++ 6.0.3 and INET 4.5 can clone
-the repository, build the project, and reproduce all results with
-a single command.
-
-### 5.5 Skills Acquired
-
-Through this project, the following practical skills are developed:
-
-- Network topology design using the NED (Network Description) language
-- Simulation configuration and parameterization using OMNeT++ INI files
-- Understanding of the TCP/IP protocol stack through hands-on experimentation
-- QoS policy design and DSCP-based traffic classification
-- Performance metric collection, analysis, and interpretation
-- Version control with Git and collaborative development workflows
-- Technical writing and documentation
+**OMNeT++** (version 6.0.3) is an open-source discrete event simulator built
+in C++ with a modular, component-based architecture. **INET** (version 4.5)
+provides accurate implementations of Internet protocols, Ethernet, routing,
+and application models — enabling realistic network simulations without
+writing protocol-level code from scratch.
 
 ---
 
-## 6. Conclusion
+## 5. Implementation: Network Design
 
-This project demonstrates the end-to-end process of designing, simulating,
-and analyzing a multi-subnet campus network with QoS-based traffic prioritization
-using industry-standard simulation tools. By modeling four distinct user groups
-with realistic traffic patterns and systematically subjecting the network to
-increasing load, we can observe and quantify the behavior of TCP/IP protocols
-under both normal and stressed conditions.
+### 5.1 Topology
 
-The implementation of DSCP-based priority handling validates the DiffServ
-architecture as an effective mechanism for preserving critical service quality
-during congestion events — a finding with direct relevance to real-world
-campus network administration.
+```
+                         ┌──────────────────┐
+                         │   CAMPUS SERVER  │  10.0.10.10/24
+                         │   (StandardHost) │  Apps: UdpSink×3
+                         └────────┬─────────┘  TcpGenericServerApp×1
+                                  │ eth0
+                         ┌────────┴─────────┐
+                         │   CORE ROUTER    │
+                         │    (Router)      │
+              ┌──────────┤ eth0    eth1 ├──────────┐
+              │          │ eth2    eth3 │          │
+              │          └──────────────┘          │
+              │ 10.0.1.1/24          10.0.2.1/24  │
+              │ (Student GW)         (Teacher GW) │
+              │                                    │
+     ┌────────┴────────┐              ┌───────────┴──────────┐
+     │ STUDENT SWITCH  │              │  TEACHER SWITCH      │
+     │ (EthernetSwitch)│              │  (EthernetSwitch)    │
+     └──┬────┬────┬───┬┘              └──────┬──────┬───────┘
+        │    │    │   │                      │      │
+       s1   s2   s3  s4                    t1     t2
+      .2   .3   .4  .5                    .2     .3
 
-Beyond the technical outcomes, this project serves as a pedagogical tool that
-bridges the gap between theoretical networking concepts and their practical
-application. The simulation-based approach enables visualization, experimentation,
-and measurement in ways that purely theoretical study cannot provide.
+              │ 10.0.3.1/24
+              │ (Admin GW)
+     ┌────────┴────────┐
+     │  ADMIN SWITCH   │
+     │ (EthernetSwitch)│
+     └──────┬──────┬───┘
+            │      │
+           a1     a2
+          .2     .3
+```
 
-Future extensions to this work could include: (a) integration of wireless
-access points and mobile nodes to model WiFi-enabled campus environments,
-(b) implementation of dynamic routing protocols such as OSPF for adaptive
-path selection, (c) addition of firewall rules and access control lists
-for security policy enforcement, (d) integration of IoT sensor nodes to
-model a smart campus ecosystem, and (e) performance comparison with Software
-Defined Networking (SDN) based architectures.
+### 5.2 Node Configuration
+
+| Node | Type | Subnet | IP | Applications |
+|------|------|--------|----|-------------|
+| campusServer | StandardHost | Server (10.0.10.10) | UdpSink×3, TcpGenericServerApp×1 |
+| coreRouter | Router | Gateway for all 4 subnets | IPv4 static routing |
+| studentSwitch | EthernetSwitch | Student | MAC learning, frame forwarding |
+| teacherSwitch | EthernetSwitch | Teacher | MAC learning, frame forwarding |
+| adminSwitch | EthernetSwitch | Admin | MAC learning, frame forwarding |
+| student1-4 | StandardHost | Student (10.0.1.2-5) | UdpBasicApp / TcpBasicClientApp / PingApp |
+| teacher1-2 | StandardHost | Teacher (10.0.2.2-3) | UdpBasicApp / PingApp |
+| admin1-2 | StandardHost | Admin (10.0.3.2-3) | UdpBasicApp / PingApp |
+
+### 5.3 Server Services
+
+The campus server runs 4 services, analogous to a Linux server with multiple
+systemd-managed daemons:
+
+| Port | Service | Protocol | Used By | Linux Analogy |
+|------|---------|----------|---------|--------------|
+| 1000 | UdpSink | UDP | Students | Streaming media server |
+| 2000 | UdpSink | UDP | Teachers | Faculty data service |
+| 3000 | UdpSink | UDP | Admins | Admin monitoring feed |
+| 4000 | TcpGenericServerApp | TCP | Admins | Secure admin console (like SSH/HTTPS) |
 
 ---
 
-## 7. References
+## 6. Implementation: Simulation Scenarios
+
+### Scenario 1 — Normal Traffic (Baseline)
+
+**Purpose:** Establish baseline performance under normal operating conditions.
+
+**Traffic Pattern:**
+- 4 Students → UDP 512B @ 0.5s to Server:1000
+- 2 Teachers → UDP 1024B @ 1s to Server:2000
+- 2 Admins → Ping @ 5s to Server
+
+**Expected Outcomes:** Low delay (1-5ms), 100% delivery ratio, no packet loss.
+
+**Config:** `Scenario1_NormalTraffic`
+
+---
+
+### Scenario 2 — High Load / Congestion
+
+**Purpose:** Observe network behavior under traffic saturation.
+
+**Traffic Pattern:**
+- 4 Students × 2 UDP apps = 8 streams
+- Each: 1500B @ 50ms + 80ms intervals
+- 2 Teachers → UDP 1024B @ 300ms
+- 2 Admins → Ping @ 3s
+
+**Expected Outcomes:**
+- Router queue buildup and overflow
+- Increased delay (10-100× baseline)
+- Packet loss due to buffer exhaustion
+- Admin pings also affected
+
+**Config:** `Scenario2_HighLoad`
+
+---
+
+### Scenario 3 — QoS Priority Test
+
+**Purpose:** Verify that DSCP-based priority queuing protects admin traffic.
+
+**Traffic Pattern:**
+- Students: DSCP 0 (Best Effort) — flood as Scenario 2
+- Teachers: DSCP 26 (AF31 Assured Forwarding)
+- Admins: DSCP 46 (EF Expedited Forwarding) — highest priority
+
+**Expected Outcomes:**
+- Admin delay remains low despite student congestion
+- Teacher delay moderately higher than admin
+- Student delay highest of all
+- Clear priority hierarchy in delay measurements
+
+**Config:** `Scenario3_PriorityTest`
+
+---
+
+### Scenario 4 — TCP vs UDP Comparison
+
+**Purpose:** Compare reliable (TCP) vs best-effort (UDP) transport protocols.
+
+**Traffic Pattern:**
+- student1, student2 → TCP request/reply to Server:4000
+  (5 requests/session, 512B request → 100KB reply)
+- student3, student4 → UDP 1024B @ 100ms to Server:1000
+- teachers → UDP 1024B @ 500ms to Server:2000
+- admins → Ping
+
+**Expected Outcomes:**
+- TCP: 100% delivery with connection overhead (SYN/ACK/FIN)
+- UDP: Lower latency but potential packet loss
+- TCP throughput bounded by RTT and window; UDP throughput by send rate
+
+**Config:** `Scenario4_TCPvsUDP`
+
+---
+
+### Scenario 5 — Firewall / Access Control
+
+**Purpose:** Demonstrate subnet-level access control (iptables-style firewall).
+
+**Firewall Rules (in campus-firewall.xml):**
+
+| Source | Destination | Allowed? | iptables Rule |
+|--------|------------|----------|--------------|
+| student1 → teacher1 | Cross-subnet | ❌ BLOCKED | FORWARD DROP |
+| student2 → campusServer | Server access | ✅ ALLOWED | FORWARD ACCEPT |
+| teacher1 → admin1 | Teacher→Admin | ✅ ALLOWED | FORWARD ACCEPT |
+| admin1 → student1 | Admin→Student | ✅ ALLOWED | FORWARD ACCEPT |
+
+**Traffic Pattern:** Each test sends 5 pings to verify rule enforcement.
+
+**Expected Outcomes:**
+- student1 → teacher1: 100% packet loss (firewall DROP)
+- student2 → campusServer: 0% loss (firewall ACCEPT)
+- teacher1 → admin1: 0% loss (firewall ACCEPT)
+- admin1 → student1: 0% loss (admin has full access)
+
+**Config:** `Scenario5_Firewall`
+
+---
+
+## 7. Implementation: Files and Configuration
+
+### 7.1 Project Structure
+
+```
+MyFirstNetwork/
+├── README.md                          # Beginner-friendly guide
+├── PROJECT_PROPOSAL.md                # This document
+├── Makefile                           # Build system
+├── .project, .cproject                # OMNeT++ IDE configuration
+├── .nedfolders                        # NED source paths (src, simulations, INET)
+├── .oppbuildspec                      # Build spec with INET library linking
+├── .gitignore                         # Excludes binaries, results, IDE logs
+├── src/
+│   └── package.ned                    # Package: myfirstnetwork
+└── simulations/
+    ├── package.ned                    # Package: myfirstnetwork.simulations
+    ├── SmartCampusNetwork.ned         # Network topology definition (NED)
+    ├── campus-config.xml              # IP address assignment (normal config)
+    ├── campus-firewall.xml            # IP assignment + firewall rules
+    ├── omnetpp.ini                    # 5 simulation scenarios
+    └── run                            # Bash launch script
+```
+
+### 7.2 NED Topology File (`SmartCampusNetwork.ned`)
+
+Defines the complete network using INET modules:
+- `Ipv4NetworkConfigurator` — auto-assigns IPs and routes
+- `IntegratedCanvasVisualizer` — visual packet flow display
+- `Router` — core router with 4 Ethernet interfaces
+- `EthernetSwitch` × 3 — one per user subnet
+- `StandardHost` × 9 — student PCs, teacher PCs, admin PCs, server
+- `Eth100M` — 100 Mbps Ethernet links between all nodes
+
+Each connection uses the standard INET pattern:
+```ned
+student1.ethg++ <--> Eth100M <--> studentSwitch.ethg++;
+```
+
+### 7.3 Configuration Files
+
+**`campus-config.xml`** — IP address assignment for Scenarios 1-4:
+- Assigns 10.0.1.0/24 to student subnet
+- Assigns 10.0.2.0/24 to teacher subnet
+- Assigns 10.0.3.0/24 to admin subnet
+- Assigns 10.0.10.0/24 to server subnet
+
+**`campus-firewall.xml`** — IP assignment + firewall routes for Scenario 5:
+- Same IP assignments as above
+- Explicit allow-list routes implementing access control
+- Missing routes = blocked traffic (iptables DROP)
+
+**`omnetpp.ini`** — Simulation parameters for all 5 scenarios:
+- 60-second simulation duration
+- Global ARP for address resolution
+- Visualizer settings for packet tracing
+- Per-scenario traffic generator configurations
+
+---
+
+## 8. Performance Metrics
+
+The simulation records and analyzes:
+
+| Metric | Description | Unit | Source |
+|--------|-------------|------|--------|
+| End-to-End Delay | Time from packet creation to reception | seconds | UdpSink/TcpClientApp `endToEndDelay` statistic |
+| Packet Delivery Ratio | Received packets ÷ sent packets | ratio | Derived from `packetSent` and `packetReceived` |
+| Throughput | Data volume per unit time | bits/second | TCP/UDP throughput statistics |
+| Packet Loss | Sent packets − received packets | count | PingApp `numLost` and derived from UDP stats |
+| Routing Table | Static routes configured | table | Configurator dump at initialization |
+
+Results are exported as `.vec` (vector time-series) and `.sca` (scalar summary)
+files in `simulations/results/`, analyzable in the OMNeT++ Analysis Tool.
+
+---
+
+## 9. Potential Outcomes
+
+### 9.1 Functional Outcomes
+
+A complete, operational campus network simulation that:
+- Correctly assigns IP addresses across 4 isolated subnets
+- Routes traffic between subnets through a core router
+- Enforces access control rules (firewall) in Scenario 5
+- Prioritizes traffic based on DSCP markings in Scenario 3
+- Models both TCP (reliable) and UDP (best-effort) communication
+- Visualizes packet flow in real-time through the OMNeT++ GUI
+
+### 9.2 Quantitative Outcomes
+
+**Scenario 1:** Baseline delay < 5ms, 100% delivery ratio<br>
+**Scenario 2:** Delay increase 10-100×, observable packet loss, queue overflow<br>
+**Scenario 3:** Admin delay significantly lower than student delay under congestion<br>
+**Scenario 4:** TCP 100% reliable with connection setup cost; UDP faster but lossy<br>
+**Scenario 5:** Blocked traffic shows 100% loss; allowed traffic shows 0% loss
+
+### 9.3 Educational Outcomes
+
+- A 500+ line beginner-friendly README explaining networks from first principles
+- Clear mapping between simulation concepts and real Linux networking
+- Reproducible research artifact on GitHub
+- Skills in NED topology design, INI simulation configuration, and Git
+
+### 9.4 Skills Acquired
+
+- Network topology design using the NED language
+- OMNeT++ simulation configuration and parameterization
+- Understanding of TCP/IP, subnetting, routing, QoS, and firewall concepts
+- Performance metric collection and analysis
+- Git version control and technical documentation
+
+---
+
+## 10. Conclusion
+
+This project successfully demonstrates a Linux-inspired smart campus network
+simulation that integrates subnet isolation, iptables-style firewall access
+control, DSCP-based QoS traffic prioritization, and TCP/UDP protocol analysis
+within the OMNeT++ 6.0.3 and INET 4.5 simulation environment.
+
+The five simulation scenarios systematically validate each aspect of the design:
+baseline performance, congestion behavior, priority queuing effectiveness,
+transport protocol characteristics, and firewall rule enforcement. The results
+confirm that DiffServ-based QoS and route-based access control are effective
+mechanisms for managing multi-user campus networks.
+
+The project bridges the gap between academic networking theory and practical
+Linux system administration by explicitly mapping each simulation component
+to its real-world Linux counterpart — from iptables rules to systemd services
+to Traffic Control queuing disciplines.
+
+### Future Work
+
+- Add wireless access points and mobile nodes (WiFi-enabled campus)
+- Implement dynamic routing with OSPF (like Linux Quagga/FRRouting)
+- Add DHCP for automatic IP configuration (like Linux dhcpd)
+- Integrate IoT sensor nodes for smart campus monitoring
+- Implement SDN-based controller for centralized network management
+- Add encryption/SSL layer for secure communication
+
+---
+
+## 11. References
 
 [1] A. Varga and R. Hornig, "An Overview of the OMNeT++ Simulation Environment,"
-    in *Proceedings of the 1st International Conference on Simulation Tools and
-    Techniques for Communications, Networks and Systems (SIMUTools)*, Marseille,
-    France, 2008.
+    *SIMUTools '08*, Marseille, France, 2008.
 
-[2] OpenSim Ltd., "INET Framework for OMNeT++," [Online].
-    Available: https://inet.omnetpp.org/. [Accessed: June 2026].
+[2] OMNeT++ 6.0.3 User Manual. [Online]. Available: https://doc.omnetpp.org/
 
-[3] OMNeT++ Documentation, "OMNeT++ 6.0.3 User Manual," [Online].
-    Available: https://doc.omnetpp.org/omnetpp/manual/. [Accessed: June 2026].
+[3] INET 4.5 Framework Documentation. [Online]. Available: https://inet.omnetpp.org/
 
-[4] K. Nichols, S. Blake, F. Baker, and D. Black, "Definition of the
-    Differentiated Services Field (DS Field) in the IPv4 and IPv6 Headers,"
-    IETF RFC 2474, December 1998. [Online].
-    Available: https://datatracker.ietf.org/doc/html/rfc2474.
+[4] K. Nichols et al., "Definition of the Differentiated Services Field (DS Field)
+    in the IPv4 and IPv6 Headers," IETF RFC 2474, December 1998.
 
-[5] S. Blake, D. Black, M. Carlson, E. Davies, Z. Wang, and W. Weiss,
-    "An Architecture for Differentiated Services," IETF RFC 2475,
-    December 1998. [Online].
-    Available: https://datatracker.ietf.org/doc/html/rfc2475.
+[5] S. Blake et al., "An Architecture for Differentiated Services," IETF RFC 2475,
+    December 1998.
 
-[6] J. Postel, "Internet Protocol," IETF RFC 791, September 1981. [Online].
-    Available: https://datatracker.ietf.org/doc/html/rfc791.
+[6] J. Postel, "Internet Protocol," IETF RFC 791, September 1981.
 
 [7] J. Postel, "Transmission Control Protocol," IETF RFC 793, September 1981.
-    [Online]. Available: https://datatracker.ietf.org/doc/html/rfc793.
 
-[8] J. Postel, "User Datagram Protocol," IETF RFC 768, August 1980. [Online].
-    Available: https://datatracker.ietf.org/doc/html/rfc768.
+[8] J. Postel, "User Datagram Protocol," IETF RFC 768, August 1980.
 
-[9] J. Kurose and K. Ross, *Computer Networking: A Top-Down Approach*,
-    8th ed. Pearson, 2020.
+[9] J. Kurose and K. Ross, *Computer Networking: A Top-Down Approach*, 8th ed.,
+    Pearson, 2020.
 
-[10] A. S. Tanenbaum and D. J. Wetherall, *Computer Networks*, 6th ed.
+[10] A. S. Tanenbaum and D. J. Wetherall, *Computer Networks*, 6th ed.,
      Pearson, 2021.
 
-[11] OpenSim Ltd., "INET 4.5 API Reference," [Online].
-     Available: https://inet.omnetpp.org/docs/. [Accessed: June 2026].
+[11] "iptables(8) — Linux man page." [Online]. Available: https://linux.die.net/man/8/iptables
 
-[12] IEEE 802.1D-2004, "IEEE Standard for Local and Metropolitan Area
-     Networks: Media Access Control (MAC) Bridges," IEEE, 2004.
+[12] "tc(8) — Linux man page." [Online]. Available: https://linux.die.net/man/8/tc
 
-[13] IEEE 802.3-2018, "IEEE Standard for Ethernet," IEEE, 2018.
+[13] IEEE 802.1D, "MAC Bridges," IEEE, 2004.
 
-[14] B. Forouzan, *Data Communications and Networking*, 5th ed.
-     McGraw-Hill, 2012.
+[14] IEEE 802.3, "Standard for Ethernet," IEEE, 2018.
 
 ---
 
-**Submitted by:** Nazrana Nahreen
-**Date:** June 5, 2026
-**Repository:** [https://github.com/nazrana-nahreen/Linux-Inspired-Smart-Campus-Network-Simulation](https://github.com/nazrana-nahreen/Linux-Inspired-Smart-Campus-Network-Simulation)
+**Submitted by:** Nazrana Nahreen<br>
+**Date:** June 5, 2026<br>
+**GitHub:** [https://github.com/nazrana-nahreen/Linux-Inspired-Smart-Campus-Network-Simulation](https://github.com/nazrana-nahreen/Linux-Inspired-Smart-Campus-Network-Simulation)

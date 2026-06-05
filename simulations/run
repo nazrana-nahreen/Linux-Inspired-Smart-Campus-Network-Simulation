@@ -1,61 +1,45 @@
 #!/bin/sh
 # Run script for Smart Campus Network Simulation
-# This script launches the simulation with the INET framework.
 #
 # PREREQUISITES:
-#   1. Build INET first:  cd ../../inet4.5 && make makefiles && make
-#   2. Build this project: cd .. && make makefiles && make
+#   1. Source OMNeT++ setenv first
+#   2. Build INET:  cd ../../inet4.5 && source setenv && make makefiles && make -j$(nproc)
+#   3. Build project: cd .. && make makefiles && make -j$(nproc)
 #
 # Usage:
-#   ./run                          # run with default config (Scenario1)
-#   ./run -c Scenario2_HighLoad    # run a specific scenario
-#   ./run -c Scenario3_PriorityTest -u Qtenv  # run with Qt GUI
+#   ./run -c Scenario1_NormalTraffic -u Qtenv     # GUI mode
+#   ./run -c Scenario5_Firewall -u Cmdenv         # Command-line mode
 
 cd `dirname $0`
 
-# INET shared library path (adjust if needed)
-# After building INET, the DLL will be at:
+# INET shared library (built by INET project)
 INET_LIB="../../inet4.5/src/libINET.dll"
 
-# Also check alternate locations
-if [ ! -f "$INET_LIB" ]; then
-    # Check if INET was built with clang release output dir
-    if [ -f "../../inet4.5/out/clang-release/src/libINET.dll" ]; then
-        INET_LIB="../../inet4.5/out/clang-release/src/libINET.dll"
-    fi
-fi
+# NED path: current dir + project src + INET source
+NED_PATH=".:../src:../../inet4.5/src"
 
-# NED path: current dir + src + INET source tree
-NED_PATH=".:../src:../../inet4.5/src:../../inet4.5/tutorials:../../inet4.5/examples"
-
-# Check if project executable exists (in src/out directory)
-if [ -f "../src/out/MyFirstNetwork_dbg.exe" ]; then
-    PROJ_EXE="../src/out/MyFirstNetwork_dbg.exe"
-elif [ -f "../src/out/MyFirstNetwork.exe" ]; then
-    PROJ_EXE="../src/out/MyFirstNetwork.exe"
-elif [ -f "../src/MyFirstNetwork_dbg.exe" ]; then
+# Find project executable
+if [ -f "../src/MyFirstNetwork_dbg.exe" ]; then
     PROJ_EXE="../src/MyFirstNetwork_dbg.exe"
 elif [ -f "../src/MyFirstNetwork.exe" ]; then
     PROJ_EXE="../src/MyFirstNetwork.exe"
-else
-    PROJ_EXE=""
+elif [ -f "../out/clang-debug/src/MyFirstNetwork_dbg.exe" ]; then
+    PROJ_EXE="../out/clang-debug/src/MyFirstNetwork_dbg.exe"
+elif [ -f "../out/clang-release/src/MyFirstNetwork.exe" ]; then
+    PROJ_EXE="../out/clang-release/src/MyFirstNetwork.exe"
 fi
 
 if [ -n "$PROJ_EXE" ] && [ -f "$INET_LIB" ]; then
-    # Run with both project and INET as libraries
     opp_run -l "$INET_LIB" -l "$PROJ_EXE" -n "$NED_PATH" "$@"
 elif [ -n "$PROJ_EXE" ]; then
-    # Run without INET lib (may fail if project doesn't embed INET)
     echo "WARNING: INET library not found at $INET_LIB"
-    echo "Build INET first: cd ../../inet4.5 && make makefiles && make"
+    echo "Build INET first: cd ../../inet4.5 && source setenv && make makefiles && make -j\$(nproc)"
     opp_run -l "$PROJ_EXE" -n "$NED_PATH" "$@"
 else
-    echo "Project not built yet."
-    echo "Build steps:"
-    echo "  1. cd ../../inet4.5 && make makefiles && make"
-    echo "  2. cd .. && make makefiles && make"
+    echo "ERROR: Project executable not found."
+    echo "Build first: cd .. && make makefiles && make -j\$(nproc)"
     echo ""
-    echo "Attempting to run with opp_run using NED path only..."
+    echo "Attempting fallback with opp_run..."
     if [ -f "$INET_LIB" ]; then
         opp_run -l "$INET_LIB" -n "$NED_PATH" "$@"
     else
