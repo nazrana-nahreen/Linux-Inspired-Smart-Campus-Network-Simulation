@@ -1,31 +1,4 @@
 <config>
-    <!-- ============================================================
-         CAMPUS FIREWALL CONFIGURATION
-         ============================================================
-         Implements access control between subnets, analogous to
-         Linux iptables rules on a gateway router.
-
-         Firewall Rules (modeled as explicit route allow/deny):
-         -------------------------------------------------------
-         RULE 1: Student subnet → Server ONLY (port 1000)
-                 Students CANNOT reach Teachers or Admins
-                 Linux eq: iptables -A FORWARD -s 10.0.1.0/24 -d 10.0.2.0/24 -j DROP
-                           iptables -A FORWARD -s 10.0.1.0/24 -d 10.0.3.0/24 -j DROP
-
-         RULE 2: Teacher subnet → Server + Admin
-                 Teachers CAN reach Admins but NOT Students
-                 Linux eq: iptables -A FORWARD -s 10.0.2.0/24 -d 10.0.1.0/24 -j DROP
-
-         RULE 3: Admin subnet → EVERYTHING (full access)
-                 Admins have unrestricted access
-                 Linux eq: iptables -A FORWARD -s 10.0.3.0/24 -j ACCEPT
-
-         RULE 4: Server → ALL subnets (for replies)
-                 Server can respond to all incoming requests
-                 Linux eq: iptables -A FORWARD -m state --state ESTABLISHED -j ACCEPT
-         ============================================================ -->
-
-    <!-- IP Address Assignment (same as campus-config.xml) -->
     <!-- Student subnet: router eth0 -->
     <interface hosts="coreRouter" names="eth0" address="10.0.1.1" netmask="255.255.255.0"/>
     <interface hosts="studentSwitch student?" names="eth*" address="10.0.1.x" netmask="255.255.255.0"/>
@@ -41,39 +14,4 @@
     <!-- Server subnet: router eth3 -->
     <interface hosts="coreRouter" names="eth3" address="10.0.10.1" netmask="255.255.255.0"/>
     <interface hosts="campusServer" names="eth*" address="10.0.10.10" netmask="255.255.255.0"/>
-
-    <!-- ============================================================
-         FIREWALL RULES (Access Control via Static Routes)
-         ============================================================
-         Only explicitly listed routes are added.
-         Missing routes = traffic blocked (like iptables DROP).
-         ============================================================ -->
-
-    <!-- STUDENT ROUTES: Only to server subnet -->
-    <!-- Students can reach the campus server for academic services -->
-    <route hosts="student?" destination="10.0.10.0" netmask="255.255.255.0"
-           gateway="10.0.1.1" interface="eth0" metric="10"/>
-
-    <!-- TEACHER ROUTES: To server AND admin subnets -->
-    <!-- Teachers can access server and communicate with admins -->
-    <route hosts="teacher?" destination="10.0.10.0" netmask="255.255.255.0"
-           gateway="10.0.2.1" interface="eth0" metric="10"/>
-    <route hosts="teacher?" destination="10.0.3.0" netmask="255.255.255.0"
-           gateway="10.0.2.1" interface="eth0" metric="10"/>
-
-    <!-- ADMIN ROUTES: Full access to all subnets -->
-    <route hosts="admin?" destination="10.0.1.0" netmask="255.255.255.0"
-           gateway="10.0.3.1" interface="eth0" metric="10"/>
-    <route hosts="admin?" destination="10.0.2.0" netmask="255.255.255.0"
-           gateway="10.0.3.1" interface="eth0" metric="10"/>
-    <route hosts="admin?" destination="10.0.10.0" netmask="255.255.255.0"
-           gateway="10.0.3.1" interface="eth0" metric="10"/>
-
-    <!-- SERVER ROUTES: Can reply to all subnets -->
-    <route hosts="campusServer" destination="10.0.1.0" netmask="255.255.255.0"
-           gateway="10.0.10.1" interface="eth0" metric="10"/>
-    <route hosts="campusServer" destination="10.0.2.0" netmask="255.255.255.0"
-           gateway="10.0.10.1" interface="eth0" metric="10"/>
-    <route hosts="campusServer" destination="10.0.3.0" netmask="255.255.255.0"
-           gateway="10.0.10.1" interface="eth0" metric="10"/>
 </config>
