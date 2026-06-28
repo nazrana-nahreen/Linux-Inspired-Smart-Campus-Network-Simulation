@@ -934,3 +934,103 @@ to real networking:
     1500 bytes, 0.5 second vs 50 millisecond intervals, DSCP 0 vs 46 —
     each choice represents a real design decision about how the network
     should behave.
+---
+
+# PART 10: SIMULATION RESULTS & GRAPHS
+
+## How to Run All 5 Scenarios
+
+Run each scenario from the `simulations/` directory using the OMNeT++ bash shell (`mingwenv.cmd`):
+
+```bash
+./run -c Scenario1_NormalTraffic -u Cmdenv
+```
+```bash
+./run -c Scenario2_HighLoad -u Cmdenv
+```
+```bash
+./run -c Scenario3_PriorityTest -u Cmdenv
+```
+```bash
+./run -c Scenario4_TCPvsUDP -u Cmdenv
+```
+```bash
+./run -c Scenario5_Firewall -u Cmdenv
+```
+
+> Use `-u Qtenv` instead of `-u Cmdenv` to open the GUI with animated packet visualization.
+
+---
+
+## Generate Result Graphs
+
+After running the simulations, generate all result graphs using:
+
+```bash
+cd ..
+python graphs.py
+```
+
+This produces 5 PNG graphs based on actual simulation output data.
+
+---
+
+## Experimental Results
+
+All 5 scenarios were simulated for **60 simulated seconds** using OMNeT++ 6.0.3 + INET 4.5.
+
+### Packets Received at Campus Server
+
+![Packets Received](graph1_packets_received.png)
+
+*Figure 1: Number of packets received at Campus Server per scenario, grouped by user type. S2 and S3 show peak student traffic. S5 (Firewall) shows near-zero delivery due to packet blocking.*
+
+---
+
+### Total Simulation Events (Network Activity)
+
+![Total Events](graph2_total_events.png)
+
+*Figure 2: Total discrete simulation events on log scale. S4 (TCP/UDP) generated 2,046,233 events due to TCP handshake overhead. S5 (Firewall) generated only 3,692 events — most packets were dropped before processing.*
+
+---
+
+### Real-Time Simulation Duration
+
+![Real-Time Duration](graph3_realtime_duration.png)
+
+*Figure 3: Actual computation time per scenario. S4 took 12.62s due to 2M+ TCP control messages. S5 completed in just 0.037s as firewall dropped traffic immediately.*
+
+---
+
+### QoS Priority Effect (S2 vs S3)
+
+![QoS Comparison](graph4_qos_comparison.png)
+
+*Figure 4 (Left): Packet delivery across S1, S2, S3 by user group. (Right): Admin traffic received 0 packets in S2 (no QoS) vs 268 packets in S3 (DSCP EF = 46 priority active) — confirming QoS works.*
+
+---
+
+### TCP vs UDP Comparison (Scenario 4)
+
+![TCP vs UDP](graph5_tcp_vs_udp.png)
+
+*Figure 5 (Left): TCP students (student1, student2) each received ~11 MB of server reply data. UDP students (student3+4) only sent ~1 MB with no large replies. (Right): student1 opened 20 TCP sessions, student2 opened 17 sessions in 60 simulated seconds.*
+
+---
+
+## Key Results Summary
+
+| Scenario | Events | Student Pkts | Teacher Pkts | Admin Pkts | TCP Data | Real Time |
+|---|---|---|---|---|---|---|
+| S1: Normal Traffic | 22,137 | 445 | 93 | 0 (ping) | — | 0.158s |
+| S2: High Load | 537,977 | 6,817 | 373 | 0 | — | 2.793s |
+| S3: QoS Priority | 552,422 | 6,925 | 361 | **268** ✓ | — | 2.685s |
+| S4: TCP vs UDP | 2,046,233 | 1,083 | 218 | 0 | 22.7 MB | 12.62s |
+| S5: Firewall | 3,692 | 94 | 0 | 0 | 0 | 0.037s |
+
+### Findings:
+- **S1 → S2**: Student packets increased 15× (445 → 6,817) confirming congestion under high load
+- **S2 → S3**: Admin packets went from 0 → 268 confirming DSCP-based QoS works
+- **S4**: TCP generated 92× more events than S1 due to connection overhead but guaranteed 22.7 MB delivery
+- **S5**: Firewall reduced events to just 3,692 (vs 537,977 in S2) — 99.3% of traffic blocked
